@@ -1,0 +1,222 @@
+Sub SplitSheets()
+    Dim selectedOperation As String
+    
+    ' Display an input box to select the operation (1 or 2).
+    selectedOperation = InputBox("Select operation:" & vbCrLf & "1. Split to Worksheets" & vbCrLf & "2. Split to Workbooks (saved to Desktop/NewWorkbooks)", "Select Operation")
+    
+    ' Check the selected operation and perform the corresponding action.
+    If selectedOperation = "1" Then
+        ' Call the SplitToWorksheets subroutine.
+        SplitToWorksheets
+    ElseIf selectedOperation = "2" Then
+        ' Call the SplitToWorkbooks subroutine.
+        SplitToWorkbooks
+    Else
+        ' Display a message for an invalid operation.
+        MsgBox "Invalid operation selected!"
+    End If
+End Sub
+
+Sub SplitToWorksheets()
+    ' Disable screen updating to improve performance.
+    Application.ScreenUpdating = False
+    
+    ' Disable display of alerts to prevent pop-up messages.
+    Application.DisplayAlerts = False
+
+    ' Declare variables for worksheets, data, and more.
+    Dim sourceWS As Worksheet
+    Dim newWS As Worksheet
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim uniqueValues As Collection
+    Dim data As Variant
+    Dim i As Long
+    Dim newRow As Long
+    Dim cellValue As Variant
+    
+    ' Set the source worksheet as the first sheet in the active workbook.
+    Set sourceWS = ActiveWorkbook.Sheets(1)
+    
+    ' Create a Collection to store unique values.
+    Set uniqueValues = New Collection
+    
+    ' Find the last row in the source worksheet.
+    lastRow = sourceWS.Cells(sourceWS.Rows.Count, "A").End(xlUp).Row
+    
+    ' Find the last column in the source worksheet.
+    lastCol = sourceWS.Cells(8, sourceWS.Columns.Count).End(xlToLeft).Column
+    
+    ' Copy data from the source worksheet to an array.
+    data = sourceWS.Range(sourceWS.Cells(9, 1), sourceWS.Cells(lastRow, lastCol)).Value
+    
+    ' Loop through the data to collect unique values.
+    For i = 1 To UBound(data, 1)
+        On Error Resume Next
+        ' Add unique values to the Collection (ignoring duplicates).
+        uniqueValues.Add data(i, 1), CStr(data(i, 1))
+        On Error GoTo 0
+    Next i
+    
+    ' Define constants for formatting and positioning.
+    Const LEFT_INCREMENT As Double = 10.5
+    Const TOP_INCREMENT As Double = 42.75
+    Const DELETE_ROW As Long = 9
+    
+    ' Loop through unique values to create new worksheets.
+    For Each cellValue In uniqueValues
+        ' Add a new worksheet and name it after the unique value.
+        Set newWS = ActiveWorkbook.Sheets.Add(After:=ActiveWorkbook.Sheets(ActiveWorkbook.Sheets.Count))
+        newWS.Name = cellValue
+        
+        ' Copy the first 8 rows from the source worksheet to the new worksheet.
+        sourceWS.Rows("1:8").Copy Destination:=newWS.Rows("1:8")
+        
+        ' Initialize the newRow variable.
+        newRow = DELETE_ROW
+        
+        ' Loop through the data and populate the new worksheet.
+        For i = 1 To UBound(data, 1)
+            If data(i, 1) = cellValue Then
+                ' Increment the newRow and copy data rows.
+                newRow = newRow + 1
+                newWS.Cells(newRow, 1).Resize(, lastCol).Value = Application.Index(data, i, 0)
+            End If
+        Next i
+        
+        ' Apply borders to the used range of the new worksheet.
+        With newWS.UsedRange.Borders
+            .LineStyle = xlContinuous
+            .Color = RGB(0, 0, 0)
+            .Weight = xlThin
+        End With
+        
+        ' Delete the 9th row from the new worksheet.
+        newWS.Rows(DELETE_ROW).Delete
+        
+        ' Copy an image (e.g., "Picture 4") from the source worksheet to the new worksheet and adjust its position.
+        sourceWS.Shapes("Picture 4").Copy
+        newWS.Range("E1:J7").PasteSpecial
+        newWS.Shapes(newWS.Shapes.Count).Left = newWS.Shapes(newWS.Shapes.Count).Left + LEFT_INCREMENT
+        newWS.Shapes(newWS.Shapes.Count).Top = newWS.Shapes(newWS.Shapes.Count).Top + TOP_INCREMENT
+    Next cellValue
+    
+    ' Re-enable screen updating.
+    Application.ScreenUpdating = True
+    
+    ' Re-enable display of alerts.
+    Application.DisplayAlerts = True
+End Sub
+
+Sub SplitToWorkbooks()
+    ' Disable screen updating to improve performance.
+    Application.ScreenUpdating = False
+    
+    ' Disable display of alerts to prevent pop-up messages.
+    Application.DisplayAlerts = False
+
+    ' Declare variables for worksheets, workbooks, data, and more.
+    Dim sourceWS As Worksheet
+    Dim newWB As Workbook
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim uniqueValues As Collection
+    Dim data As Variant
+    Dim i As Long
+    Dim cellValue As Variant
+    Dim newWS As Worksheet
+    Dim newRow As Long
+    Dim savePath As String
+    
+    ' Set the source worksheet as the first sheet in the active workbook.
+    Set sourceWS = ActiveWorkbook.Sheets(1)
+    
+    ' Determine the path where the new workbooks will be saved (on the user's desktop).
+    savePath = Environ("USERPROFILE") & "\Desktop\NewWorkbooks\"
+    
+    ' Check if the destination folder exists and create it if it doesn't.
+    If Dir(savePath, vbDirectory) = "" Then
+        MkDir savePath
+    End If
+    
+    ' Create a Collection to store unique values.
+    Set uniqueValues = New Collection
+    
+    ' Find the last row in the source worksheet.
+    lastRow = sourceWS.Cells(sourceWS.Rows.Count, "A").End(xlUp).Row
+    
+    ' Find the last column in the source worksheet.
+    lastCol = sourceWS.Cells(8, sourceWS.Columns.Count).End(xlToLeft).Column
+    
+    ' Copy data from the source worksheet to an array.
+    data = sourceWS.Range(sourceWS.Cells(9, 1), sourceWS.Cells(lastRow, lastCol)).Value
+    
+    ' Loop through the data to collect unique values.
+    For i = 1 To UBound(data, 1)
+        On Error Resume Next
+        ' Add unique values to the Collection (ignoring duplicates).
+        uniqueValues.Add data(i, 1), CStr(data(i, 1))
+        On Error GoTo 0
+    Next i
+    
+    ' Define constants for formatting and positioning.
+    Const LEFT_INCREMENT As Double = 10.5
+    Const TOP_INCREMENT As Double = 42.75
+    Const DELETE_ROW As Long = 9
+    
+    ' Loop through unique values to create new workbooks.
+    For Each cellValue In uniqueValues
+        ' Create a new workbook.
+        Set newWB = Workbooks.Add
+        ' Set the first sheet of the new workbook as the target worksheet.
+        Set newWS = newWB.Sheets(1)
+        
+        ' Name the new worksheet after the unique value.
+        newWS.Name = cellValue
+        
+        ' Copy the first 8 rows from the source worksheet to the new worksheet.
+        sourceWS.Rows("1:8").Copy Destination:=newWS.Rows("1:8")
+        
+        ' Initialize the newRow variable.
+        newRow = DELETE_ROW
+        
+        ' Loop through the data and populate the new worksheet.
+        For i = 1 To UBound(data, 1)
+            If data(i, 1) = cellValue Then
+                ' Increment the newRow and copy data rows.
+                newRow = newRow + 1
+                newWS.Cells(newRow, 1).Resize(, lastCol).Value = Application.Index(data, i, 0)
+            End If
+        Next i
+        
+        ' Apply borders to the used range of the new worksheet.
+        With newWS.UsedRange.Borders
+            .LineStyle = xlContinuous
+            .Color = RGB(0, 0, 0)
+            .Weight = xlThin
+        End With
+        
+        ' Delete the 9th row from the new worksheet.
+        newWS.Rows(DELETE_ROW).Delete
+        
+        ' Copy an image (e.g., "Picture 4") from the source worksheet to the new worksheet and adjust its position.
+        sourceWS.Shapes("Picture 4").Copy
+        newWS.Range("E1:J7").PasteSpecial
+        newWS.Shapes(newWS.Shapes.Count).Left = newWS.Shapes(newWS.Shapes.Count).Left + LEFT_INCREMENT
+        newWS.Shapes(newWS.Shapes.Count).Top = newWS.Shapes(newWS.Shapes.Count).Top + TOP_INCREMENT
+        
+        ' Save the new workbook with a filename based on the unique value to the specified path.
+        newWB.SaveAs savePath & cellValue & ".xlsx"
+        
+        ' Close the new workbook without saving changes.
+        newWB.Close SaveChanges:=False
+    Next cellValue
+    
+    ' Re-enable screen updating.
+    Application.ScreenUpdating = True
+    
+    ' Re-enable display of alerts.
+    Application.DisplayAlerts = True
+End Sub
+
+' COPYRIGHTS SATHISH 2023
